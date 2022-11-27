@@ -40,4 +40,4 @@ if __name__ == "__main__":
             "STORETIME",
             "VALUENUM",
         ]
-    ].to_csv("cache/potassiumevents.csv")
+    ].to_csv("cache/potassiumevents.csv", index=False)
