@@ -49,13 +49,26 @@ if __name__ == "__main__":
                 & ((events["starttime"] - (signal_row["endtime"]) < max_distance))
             ]
 
-            return relevent_evnets["VALUENUM"].mean()
+            return (
+                relevent_evnets["VALUENUM"].to_list(),
+                relevent_evnets["starttime"].to_list(),
+            )
 
         if len(signals) > 0 and len(events) > 0:
-            signals["VALUENUM"] = signals.apply(matcher, axis=1)
+            signals[["VALUENUM", "eventtime"]] = signals.apply(
+                matcher, axis=1, result_type="expand"
+            )
+            signals = signals.explode(["VALUENUM", "eventtime"])
         else:
             return pd.DataFrame(
-                columns=["SUBJECT_ID", "starttime", "endtime", "sig_name", "VALUENUM"]
+                columns=[
+                    "SUBJECT_ID",
+                    "starttime",
+                    "endtime",
+                    "sig_name",
+                    "VALUENUM",
+                    "eventtime",
+                ]
             )
 
         return signals
@@ -65,7 +78,14 @@ if __name__ == "__main__":
         .apply(
             grouper,
             meta=pd.DataFrame(
-                columns=["SUBJECT_ID", "starttime", "endtime", "sig_name", "VALUENUM"]
+                columns=[
+                    "SUBJECT_ID",
+                    "starttime",
+                    "endtime",
+                    "sig_name",
+                    "VALUENUM",
+                    "eventtime",
+                ]
             ),
         )
         .compute(scheduler="processes")
@@ -75,6 +95,10 @@ if __name__ == "__main__":
     # res = res.droplevel(level=0)
 
     res = res.dropna(subset=["VALUENUM"])
+    # Save non-unique index that uniquely identifies each signal
+    # There may be multiple copies of a signal if there are multiple contemperaneous measurements
+    # The number of duplications of a signal correspond to the number of contemperaneous measurements
+    res["sig_idx"] = res.index
 
     print(res.head())
     res.to_parquet("cache/enriched.parquet", index=False)
