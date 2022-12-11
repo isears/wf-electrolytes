@@ -2,7 +2,9 @@
 Cut all relevant events out of main chartevents file and save to smaller file
 """
 import dask.dataframe as dd
+import pandas as pd
 from dask.diagnostics import ProgressBar
+
 from wflytes.dataProcessing import potassium_events
 
 chartevent_columns = {
@@ -28,6 +30,10 @@ if __name__ == "__main__":
     ProgressBar().register()
     ce = ce[ce["ITEMID"].isin(potassium_events)].compute(scheduler="processes")
 
+    # Few things to do after finishing: drop na and convert to datetime type
+    ce = ce.dropna(subset="VALUENUM")
+    ce["CHARTTIME"] = pd.to_datetime(ce["CHARTTIME"])
+
     print(ce["ITEMID"].value_counts())
 
     ce[
@@ -40,4 +46,4 @@ if __name__ == "__main__":
             "STORETIME",
             "VALUENUM",
         ]
-    ].to_csv("cache/potassiumevents.csv", index=False)
+    ].to_parquet("cache/potassiumevents.parquet", index=False)
