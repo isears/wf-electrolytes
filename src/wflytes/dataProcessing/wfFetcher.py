@@ -91,7 +91,13 @@ class WfFetcher:
 
         return signal_in[chosen_idx : chosen_idx + desired_length]
 
-    def _get_record_by_hadm(self, hadm_id: int, sig_name: str) -> wfdb.Record:
+    def _get_record_by_hadm(self, hadm_id: int, sig_name: str = None) -> wfdb.Record:
+        """
+        Attempts to find a record in the db with a subject id matching the hadm id and
+        timestamps matching the hadm admittime / dischtime
+
+        If unsuccessful, will throw a WfDataNotFoundError
+        """
         subject_id = self._hadm_to_subject(hadm_id)
         dirname = self._sid_to_dir(subject_id)
         try:
@@ -109,7 +115,9 @@ class WfFetcher:
             if hadm_id == self._subject_to_hadm(subject_id, header.base_datetime):
                 hadm_record = wfdb.io.rdrecord(r, pn_dir=dirname)
 
-                if sig_name in hadm_record.sig_name:
+                if sig_name is None:
+                    break
+                elif sig_name in hadm_record.sig_name:
                     break
                 else:
                     raise WfDataNotFoundError(
@@ -181,6 +189,14 @@ class WfFetcher:
         duration_indices = int(duration.total_seconds()) * hadm_record.fs
 
         return self._get_valid_signal(signal_raw, duration_indices, latest)
+
+    def get_wf_all(self, hadm_id: int):
+        """
+        Does not throw out data. Does not waste bandwidth
+        """
+        hadm_record = self._get_record_by_hadm(hadm_id)
+
+        raise NotImplementedError()
 
 
 if __name__ == "__main__":
