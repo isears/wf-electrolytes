@@ -61,7 +61,7 @@ class WfFetcher:
         return f"{self.root_dir}/p{zfilled[0:2]}/p{zfilled}/"
 
     def _get_valid_signal(
-        self, signal_in: np.ndarray, desired_length: int
+        self, signal_in: np.ndarray, desired_length: int, latest: bool
     ) -> np.ndarray:
         """
         Get signal that's not nan and has some degree of variance
@@ -84,7 +84,10 @@ class WfFetcher:
                 f"Record exists, but couldn't find signal with variance > {self.min_variance}"
             )
 
-        chosen_idx = random.choice(valid_indices)
+        if latest:
+            chosen_idx = np.max(valid_indices)
+        else:
+            chosen_idx = random.choice(valid_indices)
 
         return signal_in[chosen_idx : chosen_idx + desired_length]
 
@@ -163,7 +166,11 @@ class WfFetcher:
             return False
 
     def get_wf_anyinterval(
-        self, hadm_id: int, sig_name: str, duration: datetime.timedelta
+        self,
+        hadm_id: int,
+        sig_name: str,
+        duration: datetime.timedelta,
+        latest: bool = False,
     ) -> np.ndarray:
         hadm_record = self._get_record_by_hadm(hadm_id, sig_name)
 
@@ -173,7 +180,7 @@ class WfFetcher:
         # TODO: assuming fs (sampling frequency) is in Hz, must verify
         duration_indices = int(duration.total_seconds()) * hadm_record.fs
 
-        return self._get_valid_signal(signal_raw, duration_indices)
+        return self._get_valid_signal(signal_raw, duration_indices, latest)
 
 
 if __name__ == "__main__":
