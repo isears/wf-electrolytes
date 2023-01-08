@@ -1,11 +1,11 @@
 """
 Gather waveform start / end dates and compile into searchable database
 """
-import wfdb
-import pandas as pd
 import datetime
-from tqdm import tqdm
 
+import pandas as pd
+import wfdb
+from tqdm import tqdm
 
 if __name__ == "__main__":
     dirs = wfdb.get_record_list("mimic3wdb-matched")
@@ -44,6 +44,7 @@ if __name__ == "__main__":
                         records.base_date, rec_header.base_time
                     )
 
+                    # TODO: I don't think this is right
                     endtime = starttime + datetime.timedelta(
                         seconds=(rec_header.sig_len / rec_header.fs)
                     )
