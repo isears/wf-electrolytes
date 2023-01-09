@@ -6,6 +6,8 @@ import pandas as pd
 import tqdm
 import wfdb
 
+from wflytes.dataProcessing import wfdb_record_to_hadmwf_record
+
 
 class WfDataNotFoundError(ValueError):
     def __init__(self, message):
@@ -13,6 +15,10 @@ class WfDataNotFoundError(ValueError):
 
 
 class WfFetcher:
+    """
+    Class to modularize fetching waveform data based on mimic identifiers
+    """
+
     root_dir = "mimic3wdb-matched/1.0"
 
     def __init__(self, min_variance: float = 0.1) -> None:
@@ -81,7 +87,7 @@ class WfFetcher:
 
         if len(valid_indices) == 0:
             raise WfDataNotFoundError(
-                f"Record exists, but couldn't find signal with variance > {self.min_variance}"
+                f"Record of length {len(signal_in)} exists, but couldn't find signal with variance > {self.min_variance}"
             )
 
         if latest:
@@ -128,7 +134,7 @@ class WfFetcher:
 
         return hadm_record
 
-    def precheck_hadm_has_data(self, hadm_id: int, sig_name: str) -> bool:
+    def precheck_hadm_has_data(self, hadm_id: int, sig_name: str = None) -> bool:
         """
         Does the minimum amount of work possible to check if hadm has usable data
 
@@ -160,7 +166,7 @@ class WfFetcher:
 
                     layout_header = wfdb.io.rdheader(layout_header_name, pn_dir=dirname)
 
-                    if sig_name in layout_header.sig_name:
+                    if sig_name is None or sig_name in layout_header.sig_name:
                         break
                     else:
                         raise WfDataNotFoundError(
@@ -190,19 +196,19 @@ class WfFetcher:
 
         return self._get_valid_signal(signal_raw, duration_indices, latest)
 
-    def get_wf_all(self, hadm_id: int):
+    def cache_locally(self, hadm_id: int) -> None:
         """
         Does not throw out data. Does not waste bandwidth
         """
         hadm_record = self._get_record_by_hadm(hadm_id)
-
-        raise NotImplementedError()
+        _ = wfdb_record_to_hadmwf_record(hadm_id, hadm_record)
 
 
 if __name__ == "__main__":
     wff = WfFetcher()
-    sample_hadm_id = 182220
+    sample_hadm_id = 125157
 
-    ret = wff.get_wf_anyinterval(sample_hadm_id, "II", datetime.timedelta(minutes=5))
+    # ret = wff.get_wf_anyinterval(sample_hadm_id, "II", datetime.timedelta(minutes=5))
+    wff.cache_locally(sample_hadm_id)
 
     print("Done")
