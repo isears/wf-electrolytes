@@ -1,8 +1,11 @@
 import datetime
+import pickle
 import random
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 import tqdm
 import wfdb
 
@@ -90,8 +93,13 @@ class WfFetcher:
                 f"Record of length {len(signal_in)} exists, but couldn't find signal with variance > {self.min_variance}"
             )
 
+        elif len(valid_indices) < desired_length:
+            raise WfDataNotFoundError(
+                f"Record of length {len(signal_in)} exists, but is too short to support desired length of {desired_length}"
+            )
+
         if latest:
-            chosen_idx = np.max(valid_indices)
+            chosen_idx = np.max(valid_indices) - (desired_length + window_size)
         else:
             chosen_idx = random.choice(valid_indices)
 
