@@ -165,7 +165,7 @@ class HadmWfOverlappingSignalRecord:
         for n in self.signal_names:
             ret.append(np.load(f"{self.record._path}/processed/{n}/{self.fnames[idx]}"))
 
-        return np.stack(ret)
+        return np.stack(ret, axis=1)
 
     def howmany(self) -> int:
         return len(self.fnames)

@@ -58,8 +58,8 @@ def skorch_tst_factory(params, ds: torch.utils.data.Dataset, pruner=None):
     tst = NeuralNetBinaryClassifier(
         TSTransformerEncoderClassiregressor,
         criterion=torch.nn.BCEWithLogitsLoss,
-        # iterator_train__collate_fn=ds.maxlen_padmask_collate_skorch,
-        # iterator_valid__collate_fn=ds.maxlen_padmask_collate_skorch,
+        iterator_train__collate_fn=ds.collate_skorch,
+        iterator_valid__collate_fn=ds.collate_skorch,
         iterator_train__num_workers=1,
         iterator_valid__num_workers=1,
         iterator_train__pin_memory=True,
@@ -69,7 +69,8 @@ def skorch_tst_factory(params, ds: torch.utils.data.Dataset, pruner=None):
         train_split=skorch.dataset.ValidSplit(0.1),
         # TST params
         module__feat_dim=ds.get_num_features(),
-        module__max_len=ds.seq_len,
+        # module__max_len=ds.seq_len,
+        module__max_len=490,  # TODO: remove
         max_epochs=25,
         **params,
     )
@@ -95,8 +96,8 @@ if __name__ == "__main__":
         "optimizer": AdamW,
         "optimizer__lr": 0.0001,
         "optimizer__weight_decay": 0,
-        "iterator_train__batch_size": 128,
-        "iterator_valid__batch_size": 128,
+        "iterator_train__batch_size": 8,
+        "iterator_valid__batch_size": 8,
     }
 
     tst = skorch_tst_factory(tst_params, ds)

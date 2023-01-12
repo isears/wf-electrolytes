@@ -61,14 +61,25 @@ class LocalWfDataset(Dataset):
     def get_seq_len(self) -> int:
         return self.seq_len
 
+    def collate_skorch(self, batch):
+        """
+        Skorch expects kwargs output
+        """
+        X = torch.stack([X[10:500] for X, _ in batch], dim=0)
+        y = torch.stack([Y for _, Y in batch], dim=0)
+        pad_mask = torch.stack(
+            [torch.ones(X.shape[1]).bool() for idx in range(0, len(batch))], dim=0
+        )
+        return dict(X=X, padding_masks=pad_mask), torch.squeeze(y)
+
     def __len__(self) -> int:
         return self.collection.howmany()
 
     def __getitem__(self, index):
-        X = self.collection.get_X(index)
-        Y = self.collection.get_Y(index)
+        X = torch.tensor(self.collection.get_X(index))
+        Y = torch.tensor(self.collection.get_Y(index))
 
-        return torch.tensor(X), torch.tensor(Y)
+        return X.float(), Y.float()
 
 
 if __name__ == "__main__":
@@ -77,7 +88,7 @@ if __name__ == "__main__":
 
     dl = DataLoader(ds, batch_size=4, num_workers=4)
 
-    for batchnum, (X, Y) in enumerate(dl):
+    for batchnum, (X, Y, pm) in enumerate(dl):
         print(X)
         print(Y)
         print(batchnum)
