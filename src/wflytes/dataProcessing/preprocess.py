@@ -38,7 +38,10 @@ def handle_single_hadm(
         for idx, var in enumerate(segment_variances):
             if var > min_variance:
                 record.cache_segment(
-                    sig_name, sig, idx * desired_length, idx + desired_length
+                    sig_name,
+                    sig.reshape(sig.shape[0] * sig.shape[1]),
+                    idx * desired_length,
+                    (idx * desired_length) + desired_length,
                 )
 
     record.update_metadata({"duration": duration})

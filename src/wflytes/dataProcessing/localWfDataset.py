@@ -8,6 +8,8 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
 
+from wflytes.dataProcessing import HadmWfRecordCollection
+
 
 class LocalWfDataset(Dataset):
     def hadm_precheck(self):
@@ -47,6 +49,8 @@ class LocalWfDataset(Dataset):
             random.seed(42)
             random.shuffle(self.hadm_ids)
 
+        self.collection = HadmWfRecordCollection(self.hadm_ids, self.signal_names)
+
         print(f"[{type(self).__name__}] Dataset initialization complete")
         print(f"\tSignals: {self.signal_names}")
         print(f"\tWindow size: {self.duration}")
@@ -58,46 +62,11 @@ class LocalWfDataset(Dataset):
         return self.seq_len
 
     def __len__(self) -> int:
-        return len(self.hadm_ids)
+        return self.collection.howmany()
 
     def __getitem__(self, index):
-        hadm_id = self.hadm_ids[index]
-
-        all_signals = list()
-
-        for signal_name in self.signal_names:
-            try:
-                signal_data = np.load(f"data/{hadm_id}/{signal_name}.npy")
-                signal_data = np.nan_to_num(signal_data, nan=0.0)
-                window_size = 20  # TODO: tune this for mem / cpu tradeoff?
-                stride = signal_data.strides[0]
-                window_shape = (signal_data.shape[0] - window_size + 1, window_size)
-                sliding_window_view = np.lib.stride_tricks.as_strided(
-                    signal_data, window_shape, (stride, stride)
-                )
-                variances = np.var(sliding_window_view, axis=1)
-                variances = variances[: signal_data.shape[0] - self.seq_len]
-                valid_indices = np.where(variances > self.min_variance)[0]
-
-                # TODO: this is terrrible and needs to be fixed by proper preprocessing of data
-                # (outside the dataset object)
-                if len(valid_indices) == 0:
-                    signal_data = np.zeros(self.seq_len)
-                else:
-                    chosen_idx = np.max(valid_indices) - (self.seq_len + window_size)
-                    signal_data = signal_data[chosen_idx : chosen_idx + self.seq_len]
-
-            except FileNotFoundError as e:
-                if not self.all_signals_required:
-                    signal_data = np.zeros(self.seq_len)
-
-                else:
-                    raise e
-
-            all_signals.append(signal_data)
-
-        X = np.stack(all_signals)
-        Y = np.load(f"data/{hadm_id}/label.npy")
+        X = self.collection.get_X(index)
+        Y = self.collection.get_Y(index)
 
         return torch.tensor(X), torch.tensor(Y)
 
