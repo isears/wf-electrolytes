@@ -4,7 +4,7 @@ import pickle
 import random
 import shutil
 from dataclasses import dataclass
-from typing import Generator
+from typing import Generator, List
 
 import numpy as np
 import pandas as pd
@@ -38,7 +38,7 @@ class HadmWfRecord:
 
         return metadata
 
-    def update_metadata(self, updates: dict[any, any]) -> None:
+    def update_metadata(self, updates) -> None:
         metadata = self._load_metadata()
 
         for k, v in updates.items():
@@ -47,10 +47,10 @@ class HadmWfRecord:
         with open(f"{self._path}/metadata.pkl", "wb") as f:
             pickle.dump(metadata, f)
 
-    def get_signal_names(self) -> list[str]:
+    def get_signal_names(self):
         return self._load_metadata()["sig_name"]
 
-    def generate_signals(self) -> Generator[tuple[str, np.ndarray], None, None]:
+    def generate_signals(self):
         for signal_name in self.get_signal_names():
             yield signal_name, np.load(f"{self._path}/{signal_name}.npy")
 
@@ -71,7 +71,7 @@ class HadmWfRecord:
 
         return len(glob.glob(f"{self._path}/processed/{signal_name}/*.npy"))
 
-    def get_overlapping_segment_count(self, signal_names: list[str]) -> int:
+    def get_overlapping_segment_count(self, signal_names) -> int:
         if len(signal_names) == 0:
             return 0
         elif len(signal_names) == 1:
@@ -112,7 +112,7 @@ class HadmWfRecord:
 
         os.makedirs(f"{self._path}/processed")
 
-    def get_signals(self, signal_names: list[str]) -> np.ndarray:
+    def get_signals(self, signal_names) -> np.ndarray:
         raise NotImplementedError()
 
     @staticmethod
@@ -123,7 +123,7 @@ class HadmWfRecord:
 @dataclass
 class HadmWfOverlappingSignalRecord:
     hadm_id: int
-    signal_names: list[str]
+    signal_names: List[str]
 
     def __post_init__(self):
         assert len(self.signal_names) > 0
@@ -173,8 +173,8 @@ class HadmWfOverlappingSignalRecord:
 
 @dataclass
 class HadmWfRecordCollection:
-    hadm_ids: list[int]
-    signal_names: list[str]
+    hadm_ids: List[int]
+    signal_names: List[str]
     shuffle: bool = True
 
     def __post_init__(self):

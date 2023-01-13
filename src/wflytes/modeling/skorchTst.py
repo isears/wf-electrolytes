@@ -11,6 +11,7 @@ import torch.utils.data
 from mvtst.models.ts_transformer import TSTransformerEncoderClassiregressor
 from mvtst.optimizers import AdamW
 from sklearn.metrics import average_precision_score, roc_auc_score
+from sklearn.model_selection import train_test_split
 from skorch import NeuralNet, NeuralNetBinaryClassifier
 from skorch.callbacks import (
     Checkpoint,
@@ -18,6 +19,7 @@ from skorch.callbacks import (
     EpochScoring,
     GradientNormClipping,
 )
+from skorch.helper import predefined_split
 
 from wflytes.dataProcessing.localWfDataset import LocalWfDataset
 
@@ -66,11 +68,10 @@ def skorch_tst_factory(params, ds: torch.utils.data.Dataset, pruner=None):
         iterator_valid__pin_memory=True,
         device="cuda",
         callbacks=tst_callbacks,
-        train_split=skorch.dataset.ValidSplit(0.1),
         # TST params
         module__feat_dim=ds.get_num_features(),
         # module__max_len=ds.seq_len,
-        module__max_len=490,  # TODO: remove
+        module__max_len=(1000 - 20),  # TODO: remove
         max_epochs=25,
         **params,
     )
@@ -80,7 +81,13 @@ def skorch_tst_factory(params, ds: torch.utils.data.Dataset, pruner=None):
 
 if __name__ == "__main__":
     hadm_ids = [int(h.split("/")[1]) for h in glob.glob("data/*")]
-    ds = LocalWfDataset(["II"], all_signals_required=True, hadm_ids=hadm_ids)
+    train_ids, valid_ids = train_test_split(
+        hadm_ids, test_size=0.1, shuffle=True, random_state=42
+    )
+
+    # TODO: don't remove everything
+    train_ds = LocalWfDataset(["II"], all_signals_required=True, hadm_ids=train_ids)
+    valid_ds = LocalWfDataset(["II"], all_signals_required=True, hadm_ids=valid_ids)
 
     tst_params = {
         "module__d_model": 128,
@@ -98,8 +105,9 @@ if __name__ == "__main__":
         "optimizer__weight_decay": 0,
         "iterator_train__batch_size": 8,
         "iterator_valid__batch_size": 8,
+        "train_split": predefined_split(valid_ds),
     }
 
-    tst = skorch_tst_factory(tst_params, ds)
+    tst = skorch_tst_factory(tst_params, train_ds)
 
-    tst.fit(ds, y=None)
+    tst.fit(train_ds, y=None)

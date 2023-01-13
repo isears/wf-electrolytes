@@ -6,6 +6,7 @@ from typing import List
 
 import numpy as np
 import torch
+from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
 
 from wflytes.dataProcessing import HadmWfRecordCollection
@@ -65,12 +66,13 @@ class LocalWfDataset(Dataset):
         """
         Skorch expects kwargs output
         """
-        X = torch.stack([X[10:500] for X, _ in batch], dim=0)
+        X = torch.stack([X[20:1000] for X, _ in batch], dim=0)
         y = torch.stack([Y for _, Y in batch], dim=0)
         pad_mask = torch.stack(
             [torch.ones(X.shape[1]).bool() for idx in range(0, len(batch))], dim=0
         )
-        return dict(X=X, padding_masks=pad_mask), torch.squeeze(y)
+
+        return dict(X=X, padding_masks=pad_mask), torch.squeeze(y, dim=1)
 
     def __len__(self) -> int:
         return self.collection.howmany()
