@@ -105,6 +105,54 @@ class OnePerHadmDataset(LocalWfDataset):
         )
 
 
+class TsaiDataset(OnePerHadmDataset):
+    def __init__(
+        self,
+        signal_names: List[str],
+        all_signals_required: bool = False,
+        hadm_ids: List[int] = None,
+        shuffle: bool = True,
+        selection: str = "latest",
+    ):
+        super().__init__(
+            signal_names, all_signals_required, hadm_ids, shuffle, selection
+        )
+
+    def collate_tsai(self, batch):
+        """
+        Skorch expects kwargs output
+        """
+        X = torch.stack([X[20:1000] for X, _ in batch], dim=0)
+        y = torch.stack([Y for _, Y in batch], dim=0)
+        pad_mask = torch.stack(
+            [torch.ones(X.shape[1]).bool() for idx in range(0, len(batch))], dim=0
+        )
+
+        return X.transpose(1, 2), y
+
+    def __getitem__(self, indices):
+        """
+        Basically, must combine collate_fn and __getitem__ into one
+        """
+
+        if type(indices) == slice:
+            # TODO: should probably just modify original __getitem__ to
+            # handle slices better...
+            step = 1 if indices.step is None else indices.step
+
+            batch = [
+                super(TsaiDataset, self).__getitem__(idx)
+                for idx in range(indices.start, indices.stop, step)
+            ]
+
+        elif type(indices) == list:
+            batch = [super(TsaiDataset, self).__getitem__(idx) for idx in indices]
+        else:
+            raise ValueError(f"Unsupported data type: {type(indices)} for indexer")
+
+        return self.collate_tsai(batch)
+
+
 if __name__ == "__main__":
     hadm_ids = [int(h.split("/")[1]) for h in glob.glob("data/*")]
     ds = LocalWfDataset(["II"], all_signals_required=True, hadm_ids=hadm_ids)
