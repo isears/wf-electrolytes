@@ -9,7 +9,7 @@ import torch
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
 
-from wflytes.dataProcessing import HadmWfRecordCollection
+from wflytes.dataProcessing import HadmWfNoHadmRepeatCollection, HadmWfRecordCollection
 
 
 class LocalWfDataset(Dataset):
@@ -28,7 +28,6 @@ class LocalWfDataset(Dataset):
         self,
         signal_names: List[str],
         all_signals_required: bool = False,
-        duration: datetime.timedelta = datetime.timedelta(seconds=60),
         hadm_ids: List[int] = None,
         shuffle: bool = True,
     ):
@@ -36,14 +35,13 @@ class LocalWfDataset(Dataset):
 
         self.signal_names = signal_names
         self.all_signals_required = all_signals_required
-        self.duration = duration
         self.hadm_ids = hadm_ids
 
         # TODO: need to verify all records have this same sampling freq
         self.expected_fs = 125
         # TODO: this needs to be determined from the preprocessing metadata (changing will have no effect)
-        self.seq_len = int(self.duration.total_seconds() * self.expected_fs)
-        self.min_variance = 0.1
+        # self.seq_len = int(self.duration.total_seconds() * self.expected_fs)
+        # self.min_variance = 0.1
 
         self.hadm_precheck()
 
@@ -55,7 +53,7 @@ class LocalWfDataset(Dataset):
 
         print(f"[{type(self).__name__}] Dataset initialization complete")
         print(f"\tSignals: {self.signal_names}")
-        print(f"\tWindow size: {self.duration}")
+        print(f"\tFinal # examples: {self.__len__()}")
 
     def get_num_features(self) -> int:
         return len(self.signal_names)
@@ -83,6 +81,28 @@ class LocalWfDataset(Dataset):
         Y = torch.tensor(self.collection.get_Y(index))
 
         return X.float(), Y.float()
+
+
+class OnePerHadmDataset(LocalWfDataset):
+    def __init__(
+        self,
+        signal_names: List[str],
+        all_signals_required: bool = False,
+        hadm_ids: List[int] = None,
+        shuffle: bool = True,
+        selection: str = "latest",
+    ):
+        super().__init__(
+            signal_names=signal_names,
+            all_signals_required=all_signals_required,
+            hadm_ids=hadm_ids,
+            shuffle=shuffle,
+        )
+
+        # Overwrite collection with the much smaller one
+        self.collection = HadmWfNoHadmRepeatCollection(
+            hadm_ids, signal_names, shuffle, how_select=selection
+        )
 
 
 if __name__ == "__main__":

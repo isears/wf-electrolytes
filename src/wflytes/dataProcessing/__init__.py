@@ -204,6 +204,27 @@ class HadmWfRecordCollection:
         return np.load(f"{record.record._path}/label.npy")
 
 
+@dataclass
+class HadmWfNoHadmRepeatCollection(HadmWfRecordCollection):
+    how_select: str = "latest"
+
+    def __post_init__(self):
+        self.records = [
+            HadmWfOverlappingSignalRecord(h, self.signal_names) for h in self.hadm_ids
+        ]
+        self.indexer = list()
+
+        if self.how_select == "latest":
+            for r in self.records:
+                idx = r.howmany() - 1
+                if idx >= 0:
+                    self.indexer.append((r, idx))
+        elif self.how_select == "random":
+            raise NotImplemented
+        else:
+            raise ValueError(f"Couldn't interpret how_select: {self.how_select}")
+
+
 def wfdb_record_to_hadmwf_record(hadm_id: int, record: wfdb.Record) -> HadmWfRecord:
     """
     Creates the underlying directory structure necessary for a HadmWfRecord

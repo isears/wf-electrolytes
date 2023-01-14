@@ -1,4 +1,5 @@
 import datetime
+import os
 import pickle
 import random
 
@@ -208,8 +209,10 @@ class WfFetcher:
         """
         Does not throw out data. Does not waste bandwidth
         """
-        hadm_record = self._get_record_by_hadm(hadm_id)
-        _ = wfdb_record_to_hadmwf_record(hadm_id, hadm_record)
+
+        if not os.path.exists(f"data/{hadm_id}"):
+            hadm_record = self._get_record_by_hadm(hadm_id)
+            _ = wfdb_record_to_hadmwf_record(hadm_id, hadm_record)
 
 
 if __name__ == "__main__":

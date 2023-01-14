@@ -14,6 +14,7 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 from skorch import NeuralNet, NeuralNetBinaryClassifier
 from skorch.callbacks import (
+    BatchScoring,
     Checkpoint,
     EarlyStopping,
     EpochScoring,
@@ -21,7 +22,7 @@ from skorch.callbacks import (
 )
 from skorch.helper import predefined_split
 
-from wflytes.dataProcessing.localWfDataset import LocalWfDataset
+from wflytes.dataProcessing.localWfDataset import LocalWfDataset, OnePerHadmDataset
 
 
 # Hack to workaround discrepancies between torch and sklearn shape expectations
@@ -90,11 +91,11 @@ if __name__ == "__main__":
     )
 
     # TODO: don't remove everything
-    train_ds = LocalWfDataset(
-        ["II", "V", "PLETH"], all_signals_required=True, hadm_ids=train_ids
+    train_ds = OnePerHadmDataset(
+        signal_names=["II", "V", "PLETH"], all_signals_required=True, hadm_ids=train_ids
     )
-    valid_ds = LocalWfDataset(
-        ["II", "V", "PLETH"], all_signals_required=True, hadm_ids=valid_ids
+    valid_ds = OnePerHadmDataset(
+        signal_names=["II", "V", "PLETH"], all_signals_required=True, hadm_ids=valid_ids
     )
 
     tst_params = {

@@ -19,7 +19,7 @@ if __name__ == "__main__":
         wff.precheck_hadm_has_data
     )
     non_stroke_hadm_ids = non_stroke_hadm_ids[non_stroke_hadm_ids["has_data"]]
-    non_stroke_hadm_ids = non_stroke_hadm_ids.sample(500, random_state=42)
+    non_stroke_hadm_ids = non_stroke_hadm_ids.sample(1000, random_state=42)
 
     success_count = 0
     for hadm_id in tqdm(non_stroke_hadm_ids["HADM_ID"].unique()):
