@@ -81,13 +81,21 @@ def skorch_tst_factory(params, ds: torch.utils.data.Dataset, pruner=None):
 
 if __name__ == "__main__":
     hadm_ids = [int(h.split("/")[1]) for h in glob.glob("data/*")]
+    # hadm_ids_with_data = []
+
+    # for h in hadm_ids:
+
     train_ids, valid_ids = train_test_split(
         hadm_ids, test_size=0.1, shuffle=True, random_state=42
     )
 
     # TODO: don't remove everything
-    train_ds = LocalWfDataset(["II"], all_signals_required=True, hadm_ids=train_ids)
-    valid_ds = LocalWfDataset(["II"], all_signals_required=True, hadm_ids=valid_ids)
+    train_ds = LocalWfDataset(
+        ["II", "V", "PLETH"], all_signals_required=True, hadm_ids=train_ids
+    )
+    valid_ds = LocalWfDataset(
+        ["II", "V", "PLETH"], all_signals_required=True, hadm_ids=valid_ids
+    )
 
     tst_params = {
         "module__d_model": 128,

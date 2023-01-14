@@ -139,8 +139,10 @@ class HadmWfOverlappingSignalRecord:
                 self.fnames = []
 
         else:
+            self.fnames = list()
+
             for name in self.signal_names:
-                if self.get_segment_count(name) == 0:
+                if self.record.get_segment_count(name) == 0:
                     return 0
 
                 try:
@@ -148,13 +150,12 @@ class HadmWfOverlappingSignalRecord:
                         os.listdir(f"{self.record._path}/processed/{n}/")
                         for n in self.signal_names
                     ]
+                    first_signal_fnames = fnames[0]
+                    other_signal_fnames = fnames[1:]
                 except FileNotFoundError:
                     fnames = list()
-
-                first_signal_fnames = fnames[0]
-                other_signal_fnames = fnames[1:]
-
-                self.fnames = list()
+                    first_signal_fnames = list()
+                    other_signal_fnames = list()
 
                 for fname in first_signal_fnames:
                     if all([fname in i for i in other_signal_fnames]):

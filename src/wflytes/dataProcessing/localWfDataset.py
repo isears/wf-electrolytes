@@ -41,6 +41,7 @@ class LocalWfDataset(Dataset):
 
         # TODO: need to verify all records have this same sampling freq
         self.expected_fs = 125
+        # TODO: this needs to be determined from the preprocessing metadata (changing will have no effect)
         self.seq_len = int(self.duration.total_seconds() * self.expected_fs)
         self.min_variance = 0.1
 
